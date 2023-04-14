@@ -342,17 +342,32 @@ struct mode_vtype_group
   uint8_t ratio_for_min_vlen64[NUM_MACHINE_MODES];
   enum vlmul_type vlmul_for_for_vlen128[NUM_MACHINE_MODES];
   uint8_t ratio_for_for_vlen128[NUM_MACHINE_MODES];
+  machine_mode subpart_mode[NUM_MACHINE_MODES];
+  uint8_t nf[NUM_MACHINE_MODES];
   mode_vtype_group ()
   {
 #define ENTRY(MODE, REQUIREMENT, VLMUL_FOR_MIN_VLEN32, RATIO_FOR_MIN_VLEN32,   \
 	      VLMUL_FOR_MIN_VLEN64, RATIO_FOR_MIN_VLEN64,                      \
-	      VLMUL_FOR_FOR_VLEN128, RATIO_FOR_FOR_VLEN128)                    \
+	      VLMUL_FOR_MIN_VLEN128, RATIO_FOR_MIN_VLEN128)                    \
   vlmul_for_min_vlen32[MODE##mode] = VLMUL_FOR_MIN_VLEN32;                     \
   ratio_for_min_vlen32[MODE##mode] = RATIO_FOR_MIN_VLEN32;                     \
   vlmul_for_min_vlen64[MODE##mode] = VLMUL_FOR_MIN_VLEN64;                     \
   ratio_for_min_vlen64[MODE##mode] = RATIO_FOR_MIN_VLEN64;                     \
-  vlmul_for_for_vlen128[MODE##mode] = VLMUL_FOR_FOR_VLEN128;                   \
-  ratio_for_for_vlen128[MODE##mode] = RATIO_FOR_FOR_VLEN128;
+  vlmul_for_for_vlen128[MODE##mode] = VLMUL_FOR_MIN_VLEN128;                   \
+  ratio_for_for_vlen128[MODE##mode] = RATIO_FOR_MIN_VLEN128;
+#include "riscv-vector-switch.def"
+#define TUPLE_ENTRY(MODE, REQUIREMENT, SUBPART_MODE, NF, VLMUL_FOR_MIN_VLEN32, \
+		    RATIO_FOR_MIN_VLEN32, VLMUL_FOR_MIN_VLEN64,                \
+		    RATIO_FOR_MIN_VLEN64, VLMUL_FOR_MIN_VLEN128,               \
+		    RATIO_FOR_MIN_VLEN128)                                     \
+  subpart_mode[MODE##mode] = SUBPART_MODE##mode;                               \
+  nf[MODE##mode] = NF;                                                         \
+  vlmul_for_min_vlen32[MODE##mode] = VLMUL_FOR_MIN_VLEN32;                     \
+  ratio_for_min_vlen32[MODE##mode] = RATIO_FOR_MIN_VLEN32;                     \
+  vlmul_for_min_vlen64[MODE##mode] = VLMUL_FOR_MIN_VLEN64;                     \
+  ratio_for_min_vlen64[MODE##mode] = RATIO_FOR_MIN_VLEN64;                     \
+  vlmul_for_for_vlen128[MODE##mode] = VLMUL_FOR_MIN_VLEN128;                   \
+  ratio_for_for_vlen128[MODE##mode] = RATIO_FOR_MIN_VLEN128;
 #include "riscv-vector-switch.def"
   }
 };
@@ -369,6 +384,26 @@ get_vlmul (machine_mode mode)
     return mode_vtype_infos.vlmul_for_min_vlen32[mode];
   else
     return mode_vtype_infos.vlmul_for_min_vlen64[mode];
+}
+
+/* Return the NF value of the corresponding mode.  */
+unsigned int
+get_nf (machine_mode mode)
+{
+  /* We don't allow non-tuple modes go through this function.  */
+  gcc_assert (riscv_v_ext_tuple_mode_p (mode));
+  return mode_vtype_infos.nf[mode];
+}
+
+/* Return the subpart mode of the tuple mode. For VNx2x1SImode,
+   the subpart mode is VNx1SImode. This will help to build
+   array/struct type in builtins.  */
+machine_mode
+get_subpart_mode (machine_mode mode)
+{
+  /* We don't allow non-tuple modes go through this function.  */
+  gcc_assert (riscv_v_ext_tuple_mode_p (mode));
+  return mode_vtype_infos.subpart_mode[mode];
 }
 
 /* Get ratio according to machine mode.  */
@@ -448,6 +483,23 @@ get_vector_mode (scalar_mode inner_mode, poly_uint64 nunits)
     if (inner_mode == GET_MODE_INNER (mode)
 	&& known_eq (nunits, GET_MODE_NUNITS (mode))
 	&& riscv_v_ext_vector_mode_p (mode))
+      return mode;
+  return opt_machine_mode ();
+}
+
+/* Return the RVV tuple mode if we can find the legal tuple mode for the
+   corresponding subpart mode and NF.  */
+opt_machine_mode
+get_tuple_mode (machine_mode subpart_mode, unsigned int nf)
+{
+  poly_uint64 nunits = GET_MODE_NUNITS (subpart_mode) * nf;
+  scalar_mode inner_mode = GET_MODE_INNER (subpart_mode);
+  enum mode_class mclass = GET_MODE_CLASS (subpart_mode);
+  machine_mode mode;
+  FOR_EACH_MODE_IN_CLASS (mode, mclass)
+    if (inner_mode == GET_MODE_INNER (mode)
+	&& known_eq (nunits, GET_MODE_NUNITS (mode))
+	&& riscv_v_ext_tuple_mode_p (mode))
       return mode;
   return opt_machine_mode ();
 }
