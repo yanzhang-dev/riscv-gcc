@@ -499,7 +499,8 @@ get_tuple_mode (machine_mode subpart_mode, unsigned int nf)
   FOR_EACH_MODE_IN_CLASS (mode, mclass)
     if (inner_mode == GET_MODE_INNER (mode)
 	&& known_eq (nunits, GET_MODE_NUNITS (mode))
-	&& riscv_v_ext_tuple_mode_p (mode))
+	&& riscv_v_ext_tuple_mode_p (mode)
+	&& get_subpart_mode (mode) == subpart_mode)
       return mode;
   return opt_machine_mode ();
 }
@@ -893,8 +894,12 @@ expand_tuple_move (machine_mode mask_mode, rtx *ops)
 		  emit_insn (gen_rtx_SET (ops[3], new_addr));
 		}
 	      rtx mem = gen_rtx_MEM (subpart_mode, ops[3]);
-	      emit_vlmax_op (code_for_pred_mov (subpart_mode), subreg, mem,
-			     ops[4], mask_mode);
+
+	      if (fractional_p)
+		emit_vlmax_op (code_for_pred_mov (subpart_mode), subreg, mem,
+			       ops[4], mask_mode);
+	      else
+		emit_move_insn (subreg, mem);
 	    }
 	}
       else
@@ -911,8 +916,12 @@ expand_tuple_move (machine_mode mask_mode, rtx *ops)
 		  emit_insn (gen_rtx_SET (ops[3], new_addr));
 		}
 	      rtx mem = gen_rtx_MEM (subpart_mode, ops[3]);
-	      emit_vlmax_op (code_for_pred_mov (subpart_mode), mem, subreg,
-			     ops[4], mask_mode);
+
+	      if (fractional_p)
+		emit_vlmax_op (code_for_pred_mov (subpart_mode), mem, subreg,
+			       ops[4], mask_mode);
+	      else
+		emit_move_insn (mem, subreg);
 	    }
 	}
     }
