@@ -794,4 +794,128 @@ gen_avl_for_scalar_move (rtx avl)
     }
 }
 
+/* Expand tuple modes data movement for.  */
+void
+expand_tuple_move (machine_mode mask_mode, rtx *ops)
+{
+  unsigned int i;
+  machine_mode tuple_mode = GET_MODE (ops[0]);
+  machine_mode subpart_mode = get_subpart_mode (tuple_mode);
+  poly_int64 subpart_size = GET_MODE_SIZE (subpart_mode);
+  unsigned int nf = get_nf (tuple_mode);
+  bool fractional_p = known_lt (subpart_size, BYTES_PER_RISCV_VECTOR);
+
+  if (REG_P (ops[0]) && CONST_VECTOR_P (ops[1]))
+    {
+      rtx val;
+      gcc_assert (can_create_pseudo_p ()
+		  && const_vec_duplicate_p (ops[1], &val));
+      for (i = 0; i < nf; ++i)
+	{
+	  poly_int64 offset = i * subpart_size;
+	  rtx subreg
+	    = simplify_gen_subreg (subpart_mode, ops[0], tuple_mode, offset);
+	  rtx dup = gen_const_vec_duplicate (subpart_mode, val);
+	  emit_move_insn (subreg, dup);
+	}
+    }
+  else if (REG_P (ops[0]) && REG_P (ops[1]))
+    {
+      for (i = 0; i < nf; ++i)
+	{
+	  int index = i;
+
+	  /* Take NF = 2 and LMUL = 1 for example:
+
+	      - move v8 to v9:
+		 vmv1r v10,v9
+		 vmv1r v9,v8
+
+	      - move v8 to v7:
+		 vmv1r v7,v8
+		 vmv1r v8,v9  */
+	  if (REGNO (ops[0]) > REGNO (ops[1]))
+	    index = nf - 1 - i;
+	  poly_int64 offset = index * subpart_size;
+	  rtx dst_subreg
+	    = simplify_gen_subreg (subpart_mode, ops[0], tuple_mode, offset);
+	  rtx src_subreg
+	    = simplify_gen_subreg (subpart_mode, ops[1], tuple_mode, offset);
+	  emit_insn (gen_rtx_SET (dst_subreg, src_subreg));
+	}
+    }
+  else
+    {
+      /* Expand tuple memory data movement.  */
+      gcc_assert (MEM_P (ops[0]) || MEM_P (ops[1]));
+      PUT_MODE (ops[2], Pmode);
+      PUT_MODE (ops[3], Pmode);
+      PUT_MODE (ops[4], Pmode);
+      rtx offset = gen_int_mode (subpart_size, Pmode);
+      if (!subpart_size.is_constant ())
+	{
+	  emit_move_insn (ops[2], gen_int_mode (BYTES_PER_RISCV_VECTOR, Pmode));
+	  if (fractional_p)
+	    {
+	      unsigned int factor
+		= exact_div (BYTES_PER_RISCV_VECTOR, subpart_size)
+		    .to_constant ();
+	      rtx pat
+		= gen_rtx_ASHIFTRT (Pmode, ops[2],
+				    gen_int_mode (exact_log2 (factor), Pmode));
+	      emit_insn (gen_rtx_SET (ops[2], pat));
+	    }
+
+	  if (known_gt (subpart_size, BYTES_PER_RISCV_VECTOR))
+	    {
+	      unsigned int factor
+		= exact_div (subpart_size, BYTES_PER_RISCV_VECTOR)
+		    .to_constant ();
+	      rtx pat
+		= gen_rtx_ASHIFT (Pmode, ops[2],
+				  gen_int_mode (exact_log2 (factor), Pmode));
+	      emit_insn (gen_rtx_SET (ops[2], pat));
+	    }
+	  offset = ops[2];
+	}
+
+      if (MEM_P (ops[1]))
+	{
+	  /* Load operations.  */
+	  emit_move_insn (ops[3], XEXP (ops[1], 0));
+	  for (i = 0; i < nf; i++)
+	    {
+	      rtx subreg = simplify_gen_subreg (subpart_mode, ops[0],
+						tuple_mode, i * subpart_size);
+	      if (i != 0)
+		{
+		  rtx new_addr = gen_rtx_PLUS (Pmode, ops[3], offset);
+		  emit_insn (gen_rtx_SET (ops[3], new_addr));
+		}
+	      rtx mem = gen_rtx_MEM (subpart_mode, ops[3]);
+	      emit_vlmax_op (code_for_pred_mov (subpart_mode), subreg, mem,
+			     ops[4], mask_mode);
+	    }
+	}
+      else
+	{
+	  /* Store operations.  */
+	  emit_move_insn (ops[3], XEXP (ops[0], 0));
+	  for (i = 0; i < nf; i++)
+	    {
+	      rtx subreg = simplify_gen_subreg (subpart_mode, ops[1],
+						tuple_mode, i * subpart_size);
+	      if (i != 0)
+		{
+		  rtx new_addr = gen_rtx_PLUS (Pmode, ops[3], offset);
+		  emit_insn (gen_rtx_SET (ops[3], new_addr));
+		}
+	      rtx mem = gen_rtx_MEM (subpart_mode, ops[3]);
+	      emit_vlmax_op (code_for_pred_mov (subpart_mode), mem, subreg,
+			     ops[4], mask_mode);
+	    }
+	}
+    }
+}
+
 } // namespace riscv_vector
