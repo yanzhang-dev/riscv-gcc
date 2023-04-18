@@ -1593,7 +1593,7 @@ backward_propagate_worthwhile_p (const basic_block cfg_bb,
 }
 
 /* Count the number of REGNO in RINSN.  */
-int
+static int
 count_regno_occurrences (rtx_insn *rinsn, unsigned int regno)
 {
   int count = 0;
