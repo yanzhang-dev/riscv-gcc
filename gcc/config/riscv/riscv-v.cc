@@ -849,9 +849,6 @@ expand_tuple_move (machine_mode mask_mode, rtx *ops)
     {
       /* Expand tuple memory data movement.  */
       gcc_assert (MEM_P (ops[0]) || MEM_P (ops[1]));
-      PUT_MODE (ops[2], Pmode);
-      PUT_MODE (ops[3], Pmode);
-      PUT_MODE (ops[4], Pmode);
       rtx offset = gen_int_mode (subpart_size, Pmode);
       if (!subpart_size.is_constant ())
 	{
