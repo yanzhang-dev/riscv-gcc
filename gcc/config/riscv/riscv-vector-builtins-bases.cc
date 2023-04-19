@@ -1553,7 +1553,7 @@ public:
     tree rhs_tuple = gimple_call_arg (f.call, 0);
     /* LMUL > 1 non-tuple vector types are not structure,
        we can't use __val[index] to set the subpart.  */
-    if (riscv_v_ext_vector_mode_p (TYPE_MODE (TREE_TYPE (rhs_tuple))))
+    if (!riscv_v_ext_tuple_mode_p (TYPE_MODE (TREE_TYPE (rhs_tuple))))
       return NULL;
     tree index = gimple_call_arg (f.call, 1);
     tree rhs_vector = gimple_call_arg (f.call, 2);
@@ -1604,7 +1604,7 @@ public:
     tree rhs_tuple = gimple_call_arg (f.call, 0);
     /* LMUL > 1 non-tuple vector types are not structure,
        we can't use __val[index] to get the subpart.  */
-    if (riscv_v_ext_vector_mode_p (TYPE_MODE (TREE_TYPE (rhs_tuple))))
+    if (!riscv_v_ext_tuple_mode_p (TYPE_MODE (TREE_TYPE (rhs_tuple))))
       return NULL;
     tree index = gimple_call_arg (f.call, 1);
     tree field = tuple_type_field (TREE_TYPE (rhs_tuple));
