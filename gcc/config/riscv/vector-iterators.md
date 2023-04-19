@@ -80,6 +80,8 @@
   UNSPEC_VRGATHEREI16
   UNSPEC_VCOMPRESS
   UNSPEC_VLEFF
+  UNSPEC_MODIFY_VL
+  UNSPEC_SEG
 ])
 
 (define_mode_iterator V [
@@ -777,6 +779,35 @@
   (VNx1DF "SF") (VNx2DF "SF") (VNx4DF "SF") (VNx8DF "SF") (VNx16DF "SF")
 ])
 
+(define_mode_attr nf [
+  (VNx2x64QI "2") (VNx2x32QI "2") (VNx3x32QI "3") (VNx4x32QI "4")
+  (VNx2x16QI "2") (VNx3x16QI "3") (VNx4x16QI "4") (VNx5x16QI "5") (VNx6x16QI "6") (VNx7x16QI "7") (VNx8x16QI "8")
+  (VNx2x8QI "2") (VNx3x8QI "3") (VNx4x8QI "4") (VNx5x8QI "5") (VNx6x8QI "6") (VNx7x8QI "7") (VNx8x8QI "8")
+  (VNx2x4QI "2") (VNx3x4QI "3") (VNx4x4QI "4") (VNx5x4QI "5") (VNx6x4QI "6") (VNx7x4QI "7") (VNx8x4QI "8")
+  (VNx2x2QI "2") (VNx3x2QI "3") (VNx4x2QI "4") (VNx5x2QI "5") (VNx6x2QI "6") (VNx7x2QI "7") (VNx8x2QI "8")
+  (VNx2x1QI "2") (VNx3x1QI "3") (VNx4x1QI "4") (VNx5x1QI "5") (VNx6x1QI "6") (VNx7x1QI "7") (VNx8x1QI "8")
+  (VNx2x32HI "2") (VNx2x16HI "2") (VNx3x16HI "3") (VNx4x16HI "4")
+  (VNx2x8HI "2") (VNx3x8HI "3") (VNx4x8HI "4") (VNx5x8HI "5") (VNx6x8HI "6") (VNx7x8HI "7") (VNx8x8HI "8")
+  (VNx2x4HI "2") (VNx3x4HI "3") (VNx4x4HI "4") (VNx5x4HI "5") (VNx6x4HI "6") (VNx7x4HI "7") (VNx8x4HI "8")
+  (VNx2x2HI "2") (VNx3x2HI "3") (VNx4x2HI "4") (VNx5x2HI "5") (VNx6x2HI "6") (VNx7x2HI "7") (VNx8x2HI "8")
+  (VNx2x1HI "2") (VNx3x1HI "3") (VNx4x1HI "4") (VNx5x1HI "5") (VNx6x1HI "6") (VNx7x1HI "7") (VNx8x1HI "8")
+  (VNx2x16SI "2") (VNx2x8SI "2") (VNx3x8SI "3") (VNx4x8SI "4")
+  (VNx2x4SI "2") (VNx3x4SI "3") (VNx4x4SI "4") (VNx5x4SI "5") (VNx6x4SI "6") (VNx7x4SI "7") (VNx8x4SI "8")
+  (VNx2x2SI "2") (VNx3x2SI "3") (VNx4x2SI "4") (VNx5x2SI "5") (VNx6x2SI "6") (VNx7x2SI "7") (VNx8x2SI "8")
+  (VNx2x1SI "2") (VNx3x1SI "3") (VNx4x1SI "4") (VNx5x1SI "5") (VNx6x1SI "6") (VNx7x1SI "7") (VNx8x1SI "8")
+  (VNx2x8DI "2") (VNx2x4DI "3") (VNx3x4DI "4") (VNx4x4DI "4")
+  (VNx2x2DI "2") (VNx3x2DI "3") (VNx4x2DI "4") (VNx5x2DI "5") (VNx6x2DI "6") (VNx7x2DI "7") (VNx8x2DI "8")
+  (VNx2x1DI "2") (VNx3x1DI "3") (VNx4x1DI "4") (VNx5x1DI "5") (VNx6x1DI "6") (VNx7x1DI "7") (VNx8x1DI "8")
+  (VNx2x16SF "2") (VNx2x8SF "2") (VNx3x8SF "3") (VNx4x8SF "4")
+  (VNx2x4SF "2") (VNx3x4SF "3") (VNx4x4SF "4") (VNx5x4SF "5") (VNx6x4SF "6") (VNx7x4SF "7") (VNx8x4SF "8")
+  (VNx2x2SF "2") (VNx3x2SF "3") (VNx4x2SF "4") (VNx5x2SF "5") (VNx6x2SF "6") (VNx7x2SF "7") (VNx8x2SF "8")
+  (VNx2x1SF "2") (VNx3x1SF "3") (VNx4x1SF "4") (VNx5x1SF "5") (VNx6x1SF "6") (VNx7x1SF "7") (VNx8x1SF "8")
+  (VNx2x8DF "2")
+  (VNx2x4DF "2") (VNx3x4DF "3") (VNx4x4DF "4")
+  (VNx2x2DF "2") (VNx3x2DF "3") (VNx4x2DF "4") (VNx5x2DF "5") (VNx6x2DF "6") (VNx7x2DF "7") (VNx8x2DF "8")
+  (VNx2x1DF "2") (VNx3x1DF "3") (VNx4x1DF "4") (VNx5x1DF "5") (VNx6x1DF "6") (VNx7x1DF "7") (VNx8x1DF "8")
+])
+
 (define_mode_attr sew [
   (VNx1QI "8") (VNx2QI "8") (VNx4QI "8") (VNx8QI "8") (VNx16QI "8") (VNx32QI "8") (VNx64QI "8") (VNx128QI "8")
   (VNx1HI "16") (VNx2HI "16") (VNx4HI "16") (VNx8HI "16") (VNx16HI "16") (VNx32HI "16") (VNx64HI "16")
@@ -784,6 +815,32 @@
   (VNx1DI "64") (VNx2DI "64") (VNx4DI "64") (VNx8DI "64") (VNx16DI "64")
   (VNx1SF "32") (VNx2SF "32") (VNx4SF "32") (VNx8SF "32") (VNx16SF "32") (VNx32SF "32")
   (VNx1DF "64") (VNx2DF "64") (VNx4DF "64") (VNx8DF "64") (VNx16DF "64")
+  (VNx2x64QI "8") (VNx2x32QI "8") (VNx3x32QI "8") (VNx4x32QI "8")
+  (VNx2x16QI "8") (VNx3x16QI "8") (VNx4x16QI "8") (VNx5x16QI "8") (VNx6x16QI "8") (VNx7x16QI "8") (VNx8x16QI "8")
+  (VNx2x8QI "8") (VNx3x8QI "8") (VNx4x8QI "8") (VNx5x8QI "8") (VNx6x8QI "8") (VNx7x8QI "8") (VNx8x8QI "8")
+  (VNx2x4QI "8") (VNx3x4QI "8") (VNx4x4QI "8") (VNx5x4QI "8") (VNx6x4QI "8") (VNx7x4QI "8") (VNx8x4QI "8")
+  (VNx2x2QI "8") (VNx3x2QI "8") (VNx4x2QI "8") (VNx5x2QI "8") (VNx6x2QI "8") (VNx7x2QI "8") (VNx8x2QI "8")
+  (VNx2x1QI "8") (VNx3x1QI "8") (VNx4x1QI "8") (VNx5x1QI "8") (VNx6x1QI "8") (VNx7x1QI "8") (VNx8x1QI "8")
+  (VNx2x32HI "16") (VNx2x16HI "16") (VNx3x16HI "16") (VNx4x16HI "16")
+  (VNx2x8HI "16") (VNx3x8HI "16") (VNx4x8HI "16") (VNx5x8HI "16") (VNx6x8HI "16") (VNx7x8HI "16") (VNx8x8HI "16")
+  (VNx2x4HI "16") (VNx3x4HI "16") (VNx4x4HI "16") (VNx5x4HI "16") (VNx6x4HI "16") (VNx7x4HI "16") (VNx8x4HI "16")
+  (VNx2x2HI "16") (VNx3x2HI "16") (VNx4x2HI "16") (VNx5x2HI "16") (VNx6x2HI "16") (VNx7x2HI "16") (VNx8x2HI "16")
+  (VNx2x1HI "16") (VNx3x1HI "16") (VNx4x1HI "16") (VNx5x1HI "16") (VNx6x1HI "16") (VNx7x1HI "16") (VNx8x1HI "16")
+  (VNx2x16SI "32") (VNx2x8SI "32") (VNx3x8SI "32") (VNx4x8SI "32")
+  (VNx2x4SI "32") (VNx3x4SI "32") (VNx4x4SI "32") (VNx5x4SI "32") (VNx6x4SI "32") (VNx7x4SI "32") (VNx8x4SI "32")
+  (VNx2x2SI "32") (VNx3x2SI "32") (VNx4x2SI "32") (VNx5x2SI "32") (VNx6x2SI "32") (VNx7x2SI "32") (VNx8x2SI "32")
+  (VNx2x1SI "32") (VNx3x1SI "32") (VNx4x1SI "32") (VNx5x1SI "32") (VNx6x1SI "32") (VNx7x1SI "32") (VNx8x1SI "32")
+  (VNx2x8DI "64") (VNx2x4DI "64") (VNx3x4DI "64") (VNx4x4DI "64")
+  (VNx2x2DI "64") (VNx3x2DI "64") (VNx4x2DI "64") (VNx5x2DI "64") (VNx6x2DI "64") (VNx7x2DI "64") (VNx8x2DI "64")
+  (VNx2x1DI "64") (VNx3x1DI "64") (VNx4x1DI "64") (VNx5x1DI "64") (VNx6x1DI "64") (VNx7x1DI "64") (VNx8x1DI "64")
+  (VNx2x16SF "32") (VNx2x8SF "32") (VNx3x8SF "32") (VNx4x8SF "32")
+  (VNx2x4SF "32") (VNx3x4SF "32") (VNx4x4SF "32") (VNx5x4SF "32") (VNx6x4SF "32") (VNx7x4SF "32") (VNx8x4SF "32")
+  (VNx2x2SF "32") (VNx3x2SF "32") (VNx4x2SF "32") (VNx5x2SF "32") (VNx6x2SF "32") (VNx7x2SF "32") (VNx8x2SF "32")
+  (VNx2x1SF "32") (VNx3x1SF "32") (VNx4x1SF "32") (VNx5x1SF "32") (VNx6x1SF "32") (VNx7x1SF "32") (VNx8x1SF "32")
+  (VNx2x8DF "64")
+  (VNx2x4DF "64") (VNx3x4DF "64") (VNx4x4DF "64")
+  (VNx2x2DF "64") (VNx3x2DF "64") (VNx4x2DF "64") (VNx5x2DF "64") (VNx6x2DF "64") (VNx7x2DF "64") (VNx8x2DF "64")
+  (VNx2x1DF "64") (VNx3x1DF "64") (VNx4x1DF "64") (VNx5x1DF "64") (VNx6x1DF "64") (VNx7x1DF "64") (VNx8x1DF "64")
 ])
 
 (define_mode_attr double_trunc_sew [
