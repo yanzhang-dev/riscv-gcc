@@ -3785,16 +3785,28 @@ riscv_arg_has_vector (const_tree type)
    Only check the value type and no checking for vector pointer type.  */
 
 static void
-riscv_pass_in_vector_p (const_tree type)
+riscv_pass_in_vector_p (const tree type, bool pass_by_reference)
 {
   static int warned = 0;
 
-  if (type && riscv_arg_has_vector (type) && !warned)
+  if (type)
     {
-      warning (OPT_Wpsabi, "ABI for the scalable vector type is currently in "
-	       "experimental stage and may changes in the upcoming version of "
-	       "GCC.");
-      warned = 1;
+
+      bool has_vector = false;
+
+      if (TREE_CODE (type) == POINTER_TYPE && pass_by_reference)
+	has_vector = riscv_arg_has_vector (TREE_TYPE (type));
+      else
+	has_vector = riscv_arg_has_vector (type);
+
+      if (has_vector && !warned)
+	{
+
+	  warning (OPT_Wpsabi, "ABI for the scalable vector type is currently "
+		   "in experimental stage and may changes in the upcoming "
+		   "version of GCC.");
+	  warned = 1;
+	}
     }
 }
 
@@ -3882,9 +3894,6 @@ riscv_get_arg_info (struct riscv_arg_info *info, const CUMULATIVE_ARGS *cum,
 	}
     }
 
-  /* Only check existing of vector type.  */
-  riscv_pass_in_vector_p (type);
-
   /* Work out the size of the argument.  */
   num_bytes = type ? int_size_in_bytes (type) : GET_MODE_SIZE (mode).to_constant ();
   num_words = (num_bytes + UNITS_PER_WORD - 1) / UNITS_PER_WORD;
@@ -3914,6 +3923,8 @@ riscv_function_arg (cumulative_args_t cum_v, const function_arg_info &arg)
 
   if (arg.end_marker_p ())
     return NULL;
+
+  riscv_pass_in_vector_p (arg.type, arg.pass_by_reference);
 
   return riscv_get_arg_info (&info, cum, arg.mode, arg.type, arg.named, false);
 }
@@ -3969,6 +3980,13 @@ riscv_function_value (const_tree type, const_tree func, machine_mode mode)
       /* Since TARGET_PROMOTE_FUNCTION_MODE unconditionally promotes,
 	 return values, promote the mode here too.  */
       mode = promote_function_mode (type, mode, &unsigned_p, func, 1);
+    }
+
+  if (func && DECL_RESULT (func))
+    {
+      tree return_type = TREE_TYPE (DECL_RESULT (func));
+      riscv_pass_in_vector_p (const_cast<tree> (type),
+			     TREE_CODE (return_type) != POINTER_TYPE);
     }
 
   memset (&args, 0, sizeof args);
